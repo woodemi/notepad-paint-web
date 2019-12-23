@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:notepad_core/notepad_core.dart';
 
@@ -22,11 +20,13 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
   void initState() {
     super.initState();
     notepadConnector.connectionChangeHandler = _handleConnectionChange;
+    notepadConnector.connect(widget.scanResult);
   }
 
   @override
   void dispose() {
     super.dispose();
+    notepadConnector.disconnect();
     notepadConnector.connectionChangeHandler = null;
   }
 
@@ -35,17 +35,21 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
   void _handleConnectionChange(NotepadClient client, NotepadConnectionState state) {
     print('_handleConnectionChange $client $state');
     if (state == NotepadConnectionState.connected) {
-      _notepadClient = client;
-      _notepadClient.callback = this;
+      client.setMode(NotepadMode.Sync).then((onValue) {
+        _notepadClient = client;
+        _notepadClient.callback = this;
+      });
     } else {
       _notepadClient?.callback = null;
       _notepadClient = null;
     }
   }
 
+  final _pointers = List<NotePenPointer>();
+
   @override
   void handlePointer(List<NotePenPointer> list) {
-    print('handlePointer ${list.length}');
+    setState(() => _pointers.addAll(list));
   }
 
   @override
@@ -61,37 +65,8 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
       appBar: AppBar(
         title: Text('NotepadDetailPage'),
       ),
-      body: Column(
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              RaisedButton(
-                child: Text('connect'),
-                onPressed: () {
-                  notepadConnector.connect(widget.scanResult, Uint8List.fromList([0x00, 0x00, 0x00, 0x02]));
-                },
-              ),
-              RaisedButton(
-                child: Text('disconnect'),
-                onPressed: () {
-                  notepadConnector.disconnect();
-                },
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              RaisedButton(
-                child: Text('setMode'),
-                onPressed: () async {
-                  await _notepadClient.setMode(NotepadMode.Sync);
-                },
-              ),
-            ],
-          ),
-        ],
+      body: Center(
+        child: Text('${_pointers.length}'),
       ),
     );
   }

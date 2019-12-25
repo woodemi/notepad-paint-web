@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:notepad_core/notepad_core.dart';
 
@@ -66,8 +69,52 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
         title: Text('NotepadDetailPage'),
       ),
       body: Center(
-        child: Text('${_pointers.length}'),
+        child: PaintArea.of(
+          srcSize: Size(14800, 21000),
+          dstSize: window.physicalSize,
+          backgroundColor: Color(0xFFFEFEFE),
+        ),
       ),
+    );
+  }
+}
+
+class PaintArea extends StatelessWidget {
+  final double scaleRatio;
+
+  final Size paintSize;
+
+  final Color backgroundColor;
+
+  PaintArea({
+    this.scaleRatio,
+    this.paintSize,
+    this.backgroundColor,
+  })
+      : assert(scaleRatio != null),
+        assert(paintSize != null);
+
+  factory PaintArea.of({
+    Size srcSize,
+    Size dstSize,
+    Color backgroundColor,
+  }) {
+    final paintScale = min(dstSize.width / srcSize.width, dstSize.height / srcSize.height);
+    final scaleRatio = paintScale / window.devicePixelRatio;
+    final paintSize = srcSize * scaleRatio;
+    return PaintArea(
+      scaleRatio: scaleRatio,
+      paintSize: paintSize,
+      backgroundColor: backgroundColor,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: backgroundColor,
+      width: paintSize.width,
+      height: paintSize.height,
     );
   }
 }

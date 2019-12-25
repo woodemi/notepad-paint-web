@@ -152,7 +152,7 @@ class _PaintAreaState extends State<PaintArea> {
       constraints: BoxConstraints.loose(widget.paintSize),
       child: CustomPaint(
         size: widget.paintSize,
-        painter: DotStrokePainter(
+        painter: LineStrokePainter(
           _pointers,
           widget.scaleRatio,
           stylusPaint: Paint()..color = Colors.lightBlueAccent,

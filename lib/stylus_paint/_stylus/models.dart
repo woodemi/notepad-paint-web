@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 class StylusPointer {
   int x;
   int y;
@@ -10,4 +12,6 @@ class StylusPointer {
         this.y = map['y'],
         this.t = map['t'],
         this.p = map['p'];
+
+  Offset get offset => Offset(x.toDouble(), y.toDouble());
 }

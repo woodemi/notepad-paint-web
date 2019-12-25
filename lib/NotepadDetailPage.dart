@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:notepad_core/notepad_core.dart';
+
+import 'stylus_paint/stylus_paint.dart';
 
 class NotepadDetailPage extends StatefulWidget {
   final scanResult;
@@ -48,11 +51,9 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
     }
   }
 
-  final _pointers = List<NotePenPointer>();
-
   @override
   void handlePointer(List<NotePenPointer> list) {
-    setState(() => _pointers.addAll(list));
+    syncPointerStreamController.addStream(Stream.fromIterable(list));
   }
 
   @override
@@ -79,7 +80,7 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
   }
 }
 
-class PaintArea extends StatelessWidget {
+class PaintArea extends StatefulWidget {
   final double scaleRatio;
 
   final Size paintSize;
@@ -115,6 +116,48 @@ class PaintArea extends StatelessWidget {
       color: backgroundColor,
       width: paintSize.width,
       height: paintSize.height,
+    );
+  }
+
+  @override
+  State<StatefulWidget> createState() => _PaintAreaState();
+}
+
+final syncPointerStreamController = StreamController<NotePenPointer>();
+
+class _PaintAreaState extends State<PaintArea> {
+  final _pointers = <StylusPointer>[];
+
+  StreamSubscription<StylusPointer> _streamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
+    _streamSubscription = stylusPointerStream.listen((onData) {
+      setState(() => _pointers.add(onData));
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _streamSubscription?.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: widget.backgroundColor,
+      constraints: BoxConstraints.loose(widget.paintSize),
+      child: CustomPaint(
+        size: widget.paintSize,
+        painter: DotStrokePainter(
+          _pointers,
+          widget.scaleRatio,
+          stylusPaint: Paint()..color = Colors.lightBlueAccent,
+        ),
+      ),
     );
   }
 }

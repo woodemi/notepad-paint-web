@@ -1,25 +1,21 @@
 import 'package:flutter/cupertino.dart';
 
+import 'controller.dart';
 import 'models.dart';
 
 class DotStrokePainter extends CustomPainter {
-  final List<StylusPointer> _pointers;
+  final StylusPaintController controller;
 
   final double scaleRatio;
 
-  final Paint stylusPaint;
-
-  DotStrokePainter(
-    this._pointers,
-    this.scaleRatio, {
-    this.stylusPaint
-  });
+  DotStrokePainter(this.controller, this.scaleRatio);
 
   @override
   void paint(Canvas canvas, Size size) {
-    for(final p in _pointers) {
-      if (p.p > 0)
-        canvas.drawCircle(p.offset * scaleRatio, 5, stylusPaint);
+    for (final stroke in controller.strokes) {
+      for (final p in stroke.pointers)
+        if (p.p > 0)
+          canvas.drawCircle(p.offset * scaleRatio, stroke.paint.strokeWidth / 2, stroke.paint);
     }
   }
 
@@ -28,27 +24,23 @@ class DotStrokePainter extends CustomPainter {
 }
 
 class LineStrokePainter extends CustomPainter {
-  final List<StylusPointer> _pointers;
+  final StylusPaintController controller;
 
   final double scaleRatio;
 
-  final Paint stylusPaint;
-
-  LineStrokePainter(
-    this._pointers,
-    this.scaleRatio, {
-    this.stylusPaint
-  });
+  LineStrokePainter(this.controller, this.scaleRatio);
 
   @override
   void paint(Canvas canvas, Size size) {
-    StylusPointer last;
-    for(final p in _pointers) {
-      final pre = last?.p ?? 0;
-      if (pre > 0 && p.p > 0) {
-        canvas.drawLine(last.offset * scaleRatio, p.offset * scaleRatio, stylusPaint);
+    for(final stroke in controller.strokes) {
+      StylusPointer last;
+      for (final p in stroke.pointers) {
+        final pre = last?.p ?? 0;
+        if (pre > 0 && p.p > 0) {
+          canvas.drawLine(last.offset * scaleRatio, p.offset * scaleRatio, stroke.paint);
+        }
+        last = p;
       }
-      last = p;
     }
   }
 

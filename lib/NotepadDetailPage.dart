@@ -10,6 +10,8 @@ import 'stylus_paint/stylus_paint.dart';
 class NotepadDetailPage extends StatefulWidget {
   final scanResult;
 
+  final stylusPaintController = StylusPaintController();
+
   NotepadDetailPage(this.scanResult);
 
   @override
@@ -68,9 +70,30 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('NotepadDetailPage'),
+        actions: <Widget>[
+          FlatButton(
+            child: Icon(Icons.exposure_plus_1),
+            onPressed: () {
+              widget.stylusPaintController.paint.strokeWidth++;
+            },
+          ),
+          FlatButton(
+            child: Icon(Icons.format_color_text),
+            onPressed: () {
+              widget.stylusPaintController.paint.color = Colors.red;
+            },
+          ),
+          FlatButton(
+            child: Icon(Icons.clear),
+            onPressed: () {
+              widget.stylusPaintController.paint = StylusPaintController.defaultPaint;
+            },
+          )
+        ],
       ),
       body: Center(
         child: PaintArea.of(
+          controller: widget.stylusPaintController,
           srcSize: Size(14800, 21000),
           dstSize: window.physicalSize,
           backgroundColor: Color(0xFFFEFEFE),
@@ -81,6 +104,8 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
 }
 
 class PaintArea extends StatefulWidget {
+  final StylusPaintController controller;
+
   final double scaleRatio;
 
   final Size paintSize;
@@ -88,6 +113,7 @@ class PaintArea extends StatefulWidget {
   final Color backgroundColor;
 
   PaintArea({
+    this.controller,
     this.scaleRatio,
     this.paintSize,
     this.backgroundColor,
@@ -96,6 +122,7 @@ class PaintArea extends StatefulWidget {
         assert(paintSize != null);
 
   factory PaintArea.of({
+    StylusPaintController controller,
     Size srcSize,
     Size dstSize,
     Color backgroundColor,
@@ -104,18 +131,10 @@ class PaintArea extends StatefulWidget {
     final scaleRatio = paintScale / window.devicePixelRatio;
     final paintSize = srcSize * scaleRatio;
     return PaintArea(
+      controller: controller,
       scaleRatio: scaleRatio,
       paintSize: paintSize,
       backgroundColor: backgroundColor,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: backgroundColor,
-      width: paintSize.width,
-      height: paintSize.height,
     );
   }
 
@@ -126,8 +145,6 @@ class PaintArea extends StatefulWidget {
 final syncPointerStreamController = StreamController<NotePenPointer>();
 
 class _PaintAreaState extends State<PaintArea> {
-  final _pointers = <StylusPointer>[];
-
   StreamSubscription<StylusPointer> _streamSubscription;
 
   @override
@@ -135,7 +152,7 @@ class _PaintAreaState extends State<PaintArea> {
     super.initState();
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
     _streamSubscription = stylusPointerStream.listen((onData) {
-      setState(() => _pointers.add(onData));
+      setState(() => widget.controller.append(onData));
     });
   }
 
@@ -153,9 +170,8 @@ class _PaintAreaState extends State<PaintArea> {
       child: CustomPaint(
         size: widget.paintSize,
         painter: LineStrokePainter(
-          _pointers,
+          widget.controller,
           widget.scaleRatio,
-          stylusPaint: Paint()..color = Colors.lightBlueAccent,
         ),
       ),
     );

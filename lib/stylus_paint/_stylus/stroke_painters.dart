@@ -1,12 +1,13 @@
 import 'dart:collection';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import 'controller.dart';
 import 'models.dart';
 
 class DotStrokePainter extends CustomPainter {
-  final StylusPaintController controller;
+  final StylusPainterController controller;
 
   final double scaleRatio;
 
@@ -26,7 +27,7 @@ class DotStrokePainter extends CustomPainter {
 }
 
 class LineStrokePainter extends CustomPainter {
-  final StylusPaintController controller;
+  final StylusPainterController controller;
 
   final double scaleRatio;
 
@@ -53,7 +54,7 @@ class LineStrokePainter extends CustomPainter {
 const CUBIC_NUM = 4;
 
 class PathStrokePainter extends CustomPainter {
-  final StylusPaintController controller;
+  final StylusPainterController controller;
 
   final double scaleRatio;
 

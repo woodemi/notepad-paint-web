@@ -10,7 +10,7 @@ import 'stylus_paint/stylus_paint.dart';
 class NotepadDetailPage extends StatefulWidget {
   final scanResult;
 
-  final stylusPaintController = StylusPaintController();
+  final stylusPaintController = StylusPainterController();
 
   NotepadDetailPage(this.scanResult);
 
@@ -86,7 +86,7 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
           FlatButton(
             child: Icon(Icons.clear),
             onPressed: () {
-              widget.stylusPaintController.paint = StylusPaintController.defaultPaint;
+              widget.stylusPaintController.paint = StylusPainterController.defaultPaint;
             },
           )
         ],
@@ -104,7 +104,7 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
 }
 
 class PaintArea extends StatefulWidget {
-  final StylusPaintController controller;
+  final StylusPainterController controller;
 
   final double scaleRatio;
 
@@ -122,7 +122,7 @@ class PaintArea extends StatefulWidget {
         assert(paintSize != null);
 
   factory PaintArea.of({
-    StylusPaintController controller,
+    StylusPainterController controller,
     Size srcSize,
     Size dstSize,
     Color backgroundColor,
@@ -167,12 +167,23 @@ class _PaintAreaState extends State<PaintArea> {
     return Container(
       color: widget.backgroundColor,
       constraints: BoxConstraints.loose(widget.paintSize),
-      child: CustomPaint(
-        size: widget.paintSize,
-        painter: PathStrokePainter(
-          widget.controller,
-          widget.scaleRatio,
-        ),
+      child: Stack(
+        children: <Widget>[
+          CustomPaint(
+            size: widget.paintSize,
+            painter: PathStrokePainter(
+              widget.controller,
+              widget.scaleRatio,
+            ),
+          ),
+          CustomPaint(
+            size: widget.paintSize,
+            painter: CircleIndicatePainter(
+              widget.controller,
+              widget.scaleRatio,
+            ),
+          )
+        ],
       ),
     );
   }

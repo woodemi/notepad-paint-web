@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/cupertino.dart';
 
 import 'controller.dart';
@@ -40,6 +42,44 @@ class LineStrokePainter extends CustomPainter {
           canvas.drawLine(last.offset * scaleRatio, p.offset * scaleRatio, stroke.paint);
         }
         last = p;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
+
+const CUBIC_NUM = 4;
+
+class PathStrokePainter extends CustomPainter {
+  final StylusPaintController controller;
+
+  final double scaleRatio;
+
+  PathStrokePainter(this.controller, this.scaleRatio);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for(final stroke in controller.strokes) {
+      final cubicQueue = ListQueue<StylusPointer>(CUBIC_NUM);
+      for (final p in stroke.pointers) {
+        cubicQueue.add(p);
+        if (cubicQueue.length < CUBIC_NUM)
+          continue;
+        else if (cubicQueue.length > CUBIC_NUM)
+          cubicQueue.removeFirst();
+
+        var pre = cubicQueue.elementAt(0);
+        var c1 = cubicQueue.elementAt(1);
+        var c2 = cubicQueue.elementAt(2);
+        var cur = cubicQueue.elementAt(3);
+
+        var path = Path()
+          ..moveTo(pre.x * scaleRatio, pre.y * scaleRatio)
+          ..cubicTo(c1.x * scaleRatio, c1.y * scaleRatio, c2.x * scaleRatio, c2.y * scaleRatio, cur.x * scaleRatio, cur.y * scaleRatio);
+
+        canvas.drawPath(path, stroke.paint);
       }
     }
   }

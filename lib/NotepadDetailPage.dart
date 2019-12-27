@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:notepad_core/notepad_core.dart';
@@ -95,7 +95,7 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
         child: PaintArea.of(
           controller: widget.stylusPaintController,
           srcSize: Size(14800, 21000),
-          dstSize: window.physicalSize,
+          dstSize: ui.window.physicalSize,
           backgroundColor: Color(0xFFFEFEFE),
         ),
       ),
@@ -128,7 +128,7 @@ class PaintArea extends StatefulWidget {
     Color backgroundColor,
   }) {
     final paintScale = min(dstSize.width / srcSize.width, dstSize.height / srcSize.height);
-    final scaleRatio = paintScale / window.devicePixelRatio;
+    final scaleRatio = paintScale / ui.window.devicePixelRatio;
     final paintSize = srcSize * scaleRatio;
     return PaintArea(
       controller: controller,
@@ -147,9 +147,14 @@ final syncPointerStreamController = StreamController<NotePenPointer>();
 class _PaintAreaState extends State<PaintArea> {
   StreamSubscription<StylusPointer> _streamSubscription;
 
+  ui.Image _indicator;
+
   @override
   void initState() {
     super.initState();
+    loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
+      setState(() => _indicator = onValue);
+    });
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
     _streamSubscription = stylusPointerStream.listen((onData) {
       setState(() => widget.controller.append(onData));
@@ -182,9 +187,28 @@ class _PaintAreaState extends State<PaintArea> {
               widget.controller,
               widget.scaleRatio,
             ),
-          )
+          ),
+          if (_indicator != null)
+            CustomPaint(
+              size: widget.paintSize,
+              painter: ImageIndicatePainter(
+                widget.controller,
+                widget.scaleRatio,
+                _indicator,
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+Future<ui.Image> loadAssetImage<T>(ImageProvider<T> imageProvider) async {
+  var stream = imageProvider.resolve(ImageConfiguration.empty);
+  var completer = Completer<ui.Image>();
+  var listener = ImageStreamListener((frame, sync) => completer.complete(frame.image));
+  stream.addListener(listener);
+  var image = await completer.future;
+  stream.removeListener(listener);
+  return image;
 }

@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 
 import 'models.dart';
 
-class StylusPaintController {
+class StylusPainterController {
   static Paint get defaultPaint => Paint()
     ..color = Colors.black
     ..strokeWidth = 5;
 
+  /// All pointers
+  final List<StylusPointer> pointers = List<StylusPointer>();
+
+  /// Pointers whose pressure > 0
   final List<StylusStroke> strokes = List<StylusStroke>();
 
   Paint _paint = defaultPaint;
@@ -23,6 +27,8 @@ class StylusPaintController {
   StylusStroke _s;
 
   void append(StylusPointer pointer) {
+    pointers.add(pointer);
+
     if (pointer.p == 0) {
       _s = null; // Ensure no stroke
       return;

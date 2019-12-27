@@ -6,8 +6,6 @@ import 'controller.dart';
 class CircleIndicatePainter extends CustomPainter {
   static const Color defaultColor = Colors.black;
 
-  static const double defaultRadius = 5;
-
   final StylusPainterController controller;
 
   final double scaleRatio;
@@ -24,6 +22,8 @@ class CircleIndicatePainter extends CustomPainter {
     _paint.color = color;
   }
 
+  static const double defaultRadius = 5;
+
   double _paintRadius = defaultRadius;
 
   double get paintRadius => _paintRadius;
@@ -33,11 +33,27 @@ class CircleIndicatePainter extends CustomPainter {
     _paintRadius = paintRadius;
   }
 
+  bool trackEnabled = false;
+
+  static const int defaultTrackPointerCount = 10;
+
+  int _trackPointerCount = defaultTrackPointerCount;
+
+  int get trackPointerCount => _trackPointerCount;
+
+  set trackPointerCount(int trackPointerCount) {
+    assert(trackPointerCount != null);
+    _trackPointerCount = trackPointerCount;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    if (controller.pointers.length > 0) {
-      var pointer = controller.pointers.last;
-      canvas.drawCircle(pointer.offset * scaleRatio, _paintRadius ?? defaultRadius, _paint);
+    var length = controller.pointers.length;
+    var count = trackEnabled ? trackPointerCount : 1;
+    if (length >= count) {
+      var pointers = controller.pointers.sublist(length - count);
+      for (final p in pointers)
+        canvas.drawCircle(p.offset * scaleRatio, _paintRadius, _paint);
     }
   }
 

@@ -4,127 +4,86 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 import 'controller.dart';
+import 'models.dart';
 
-class CircleIndicatePainter extends CustomPainter {
-  static const Color defaultColor = Colors.black;
-
+abstract class IndicatePainter extends CustomPainter {
   final StylusPainterController controller;
 
   final double scaleRatio;
 
-  CircleIndicatePainter(this.controller, this.scaleRatio);
-
-  final Paint _paint = Paint()
-    ..color = defaultColor;
-
-  Color get color => _paint.color;
-
-  set color(Color color) {
-    assert(color != null);
-    _paint.color = color;
-  }
-
-  static const double defaultRadius = 5;
-
-  double _paintRadius = defaultRadius;
-
-  double get paintRadius => _paintRadius;
-
-  set paintRadius(double paintRadius) {
-    assert(paintRadius != null);
-    _paintRadius = paintRadius;
-  }
+  IndicatePainter(this.controller, this.scaleRatio);
 
   bool trackEnabled = false;
 
   static const int defaultTrackPointerCount = 10;
 
-  int _trackPointerCount = defaultTrackPointerCount;
-
-  int get trackPointerCount => _trackPointerCount;
-
-  set trackPointerCount(int trackPointerCount) {
-    assert(trackPointerCount != null);
-    _trackPointerCount = trackPointerCount;
-  }
+  int trackPointerCount = defaultTrackPointerCount;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(ui.Canvas canvas, ui.Size size) {
     var length = controller.pointers.length;
     var count = trackEnabled ? trackPointerCount : 1;
-    if (length >= count) {
-      var pointers = controller.pointers.sublist(length - count);
-      for (final p in pointers)
-        canvas.drawCircle(p.offset * scaleRatio, _paintRadius, _paint);
-    }
+    if (length < count) return;
+
+    var pointers = controller.pointers.sublist(length - count);
+    paintPointers(canvas, size, pointers);
   }
+
+  void paintPointers(ui.Canvas canvas, ui.Size size, List<StylusPointer> pointers);
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
 
-class ImageIndicatePainter extends CustomPainter {
+class CircleIndicatePainter extends IndicatePainter {
+  CircleIndicatePainter(StylusPainterController controller, double scaleRatio)
+      : super(controller, scaleRatio);
+
   static const Color defaultColor = Colors.black;
 
-  final StylusPainterController controller;
+  final Paint uiPaint = Paint()
+    ..color = defaultColor;
 
-  final double scaleRatio;
+  static const double defaultRadius = 5;
 
+  double paintRadius = defaultRadius;
+
+  @override
+  void paintPointers(ui.Canvas canvas, ui.Size size, List<StylusPointer> pointers) {
+    for (final p in pointers)
+      canvas.drawCircle(p.offset * scaleRatio, paintRadius ?? defaultRadius, uiPaint);
+  }
+}
+
+class ImageIndicatePainter extends IndicatePainter {
   final ui.Image image;
 
-  ImageIndicatePainter(this.controller, this.scaleRatio, this.image) {
+  ImageIndicatePainter(StylusPainterController controller, double scaleRatio, this.image)
+    : super(controller, scaleRatio) {
     translate = defaultTranslate;
   }
 
-  final Paint _paint = Paint()..color = Colors.green;
-
-  bool trackEnabled = false;
-
-  static const int defaultTrackPointerCount = 10;
-
-  int _trackPointerCount = defaultTrackPointerCount;
-
-  int get trackPointerCount => _trackPointerCount;
-
-  set trackPointerCount(int trackPointerCount) {
-    assert(trackPointerCount != null);
-    _trackPointerCount = trackPointerCount;
-  }
+  final Paint uiPaint = Paint();
 
   Offset get defaultTranslate => Offset(image.width / 2, -image.height / 2);
 
-  Offset _translate;
-
-  Offset get translate => _translate;
-
-  set translate(Offset translate) {
-    assert(translate != null);
-    _translate = translate;
-  }
+  Offset translate;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    var length = controller.pointers.length;
-    var count = trackEnabled ? trackPointerCount : 1;
-    if (length < count) return;
-
+  void paintPointers(ui.Canvas canvas, ui.Size size, List<StylusPointer> pointers) {
     canvas.save();
-    canvas.translate(translate.dx, translate.dy);
+    canvas.translate(translate?.dx ?? 0, translate?.dy ?? 0);
 
-    var pointers = controller.pointers.sublist(length - count);
     for (final p in pointers) {
       var src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
       var dst = Rect.fromCenter(
-          center: p.offset * scaleRatio,
-          width: image.width.toDouble(),
-          height: image.height.toDouble(),
+        center: p.offset * scaleRatio,
+        width: image.width.toDouble(),
+        height: image.height.toDouble(),
       );
-      canvas.drawImageRect(image, src, dst, _paint);
+      canvas.drawImageRect(image, src, dst, uiPaint);
     }
 
     canvas.restore();
   }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }

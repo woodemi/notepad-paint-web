@@ -152,14 +152,24 @@ class _PaintAreaState extends State<PaintArea> {
   @override
   void initState() {
     super.initState();
+    widget.controller.paint.strokeWidth = 0.5;
     loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
       setState(() => _indicator = onValue);
     });
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
-    _streamSubscription = stylusPointerStream.listen((onData) {
-      setState(() => widget.controller.append(onData));
+    _streamSubscription = stylusPointerStream.timeout(Duration(milliseconds: 100)).listen((onData) {
+      setState(() {
+        if (!indicatorVisible) indicatorVisible = true;
+        widget.controller.append(onData);
+      });
+    }, onError: (error) {
+      if (error is TimeoutException) {
+        if (indicatorVisible) setState(() => indicatorVisible = false);
+      }
     });
   }
+
+  bool indicatorVisible = false;
 
   @override
   void dispose() {
@@ -176,29 +186,44 @@ class _PaintAreaState extends State<PaintArea> {
         children: <Widget>[
           CustomPaint(
             size: widget.paintSize,
-            painter: PathStrokePainter(
+            painter: LineStrokePainter(
               widget.controller,
               widget.scaleRatio,
             ),
           ),
-          CustomPaint(
-            size: widget.paintSize,
-            painter: CircleIndicatePainter(
-              widget.controller,
-              widget.scaleRatio,
-            )..uiPaint.style = PaintingStyle.stroke,
-          ),
-          if (_indicator != null)
-            CustomPaint(
-              size: widget.paintSize,
-              painter: ImageIndicatePainter(
-                widget.controller,
-                widget.scaleRatio,
-                _indicator,
-              ),
+          if (indicatorVisible)
+            _buildIndicator(),
+          if (!indicatorVisible)
+            AnimatedOpacity(
+              opacity: 0.0,
+              duration: Duration(milliseconds: 200),
+              child: _buildIndicator(),
             ),
         ],
       ),
+    );
+  }
+
+  Stack _buildIndicator() {
+    return Stack(
+      children: <Widget>[
+        CustomPaint(
+          size: widget.paintSize,
+          painter: CircleIndicatePainter(
+            widget.controller,
+            widget.scaleRatio,
+          )..uiPaint.style = PaintingStyle.stroke,
+        ),
+        if (_indicator != null)
+          CustomPaint(
+            size: widget.paintSize,
+            painter: ImageIndicatePainter(
+              widget.controller,
+              widget.scaleRatio,
+              _indicator,
+            ),
+          ),
+      ],
     );
   }
 }

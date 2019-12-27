@@ -142,34 +142,20 @@ class PaintArea extends StatefulWidget {
   State<StatefulWidget> createState() => _PaintAreaState();
 }
 
-final syncPointerStreamController = StreamController<NotePenPointer>();
+final syncPointerStreamController = StreamController<NotePenPointer>.broadcast();
 
 class _PaintAreaState extends State<PaintArea> {
   StreamSubscription<StylusPointer> _streamSubscription;
-
-  ui.Image _indicator;
 
   @override
   void initState() {
     super.initState();
     widget.controller.paint.strokeWidth = 0.5;
-    loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
-      setState(() => _indicator = onValue);
-    });
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
-    _streamSubscription = stylusPointerStream.timeout(Duration(milliseconds: 100)).listen((onData) {
-      setState(() {
-        if (!indicatorVisible) indicatorVisible = true;
-        widget.controller.append(onData);
-      });
-    }, onError: (error) {
-      if (error is TimeoutException) {
-        if (indicatorVisible) setState(() => indicatorVisible = false);
-      }
+    _streamSubscription = stylusPointerStream.listen((onData) {
+      setState(() => widget.controller.append(onData));
     });
   }
-
-  bool indicatorVisible = false;
 
   @override
   void dispose() {
@@ -191,17 +177,67 @@ class _PaintAreaState extends State<PaintArea> {
               widget.scaleRatio,
             ),
           ),
-          if (indicatorVisible)
-            _buildIndicator(),
-          if (!indicatorVisible)
-            AnimatedOpacity(
-              opacity: 0.0,
-              duration: Duration(milliseconds: 200),
-              child: _buildIndicator(),
-            ),
+          IndicatorLayer(
+            widget.controller,
+            widget.scaleRatio,
+            widget.paintSize,
+          ),
         ],
       ),
     );
+  }
+}
+
+class IndicatorLayer extends StatefulWidget {
+  final StylusPainterController controller;
+
+  final double scaleRatio;
+
+  final Size paintSize;
+
+  IndicatorLayer(this.controller, this.scaleRatio, this.paintSize);
+
+  @override
+  State<StatefulWidget> createState() => _IndicatorLayerState();
+}
+
+class _IndicatorLayerState extends State<IndicatorLayer> {
+  ui.Image _indicator;
+
+  bool visible = false;
+
+  StreamSubscription _streamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
+      setState(() => _indicator = onValue);
+    });
+    _streamSubscription = syncPointerStreamController.stream.timeout(Duration(milliseconds: 100)).listen((onData) {
+      if (!visible) setState(() => visible = true);
+    }, onError: (error) {
+      if (error is TimeoutException) {
+        if (visible) setState(() => visible = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _streamSubscription?.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return visible
+        ? _buildIndicator()
+        : AnimatedOpacity(
+            opacity: 0.0,
+            duration: Duration(milliseconds: 200),
+            child: _buildIndicator(),
+          );
   }
 
   Stack _buildIndicator() {

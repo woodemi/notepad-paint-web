@@ -186,7 +186,7 @@ class _PaintAreaState extends State<PaintArea> {
             painter: CircleIndicatePainter(
               widget.controller,
               widget.scaleRatio,
-            ),
+            )..uiPaint.style = PaintingStyle.stroke,
           ),
           if (_indicator != null)
             CustomPaint(

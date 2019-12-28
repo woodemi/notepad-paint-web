@@ -3,19 +3,18 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'controller.dart';
 import 'models.dart';
 
 class DotStrokePainter extends CustomPainter {
-  final StylusPainterController controller;
+  final List<StylusStroke> strokes;
 
   final double scaleRatio;
 
-  DotStrokePainter(this.controller, this.scaleRatio);
+  DotStrokePainter(this.strokes, this.scaleRatio);
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (final stroke in controller.strokes) {
+    for (final stroke in strokes) {
       for (final p in stroke.pointers)
         if (p.p > 0)
           canvas.drawCircle(p.offset * scaleRatio, stroke.paint.strokeWidth / 2, stroke.paint);
@@ -27,15 +26,15 @@ class DotStrokePainter extends CustomPainter {
 }
 
 class LineStrokePainter extends CustomPainter {
-  final StylusPainterController controller;
+  final List<StylusStroke> strokes;
 
   final double scaleRatio;
 
-  LineStrokePainter(this.controller, this.scaleRatio);
+  LineStrokePainter(this.strokes, this.scaleRatio);
 
   @override
   void paint(Canvas canvas, Size size) {
-    for(final stroke in controller.strokes) {
+    for(final stroke in strokes) {
       StylusPointer last;
       for (final p in stroke.pointers) {
         final pre = last?.p ?? 0;
@@ -54,15 +53,15 @@ class LineStrokePainter extends CustomPainter {
 const CUBIC_NUM = 4;
 
 class PathStrokePainter extends CustomPainter {
-  final StylusPainterController controller;
+  final List<StylusStroke> strokes;
 
   final double scaleRatio;
 
-  PathStrokePainter(this.controller, this.scaleRatio);
+  PathStrokePainter(this.strokes, this.scaleRatio);
 
   @override
   void paint(Canvas canvas, Size size) {
-    for(final stroke in controller.strokes) {
+    for(final stroke in strokes) {
       final cubicQueue = ListQueue<StylusPointer>(CUBIC_NUM);
       for (final p in stroke.pointers) {
         cubicQueue.add(p);

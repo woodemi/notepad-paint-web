@@ -173,7 +173,7 @@ class _PaintAreaState extends State<PaintArea> {
           CustomPaint(
             size: widget.paintSize,
             painter: LineStrokePainter(
-              widget.controller,
+              widget.controller.strokes,
               widget.scaleRatio,
             ),
           ),

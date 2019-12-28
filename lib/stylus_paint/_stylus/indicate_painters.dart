@@ -3,15 +3,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-import 'controller.dart';
 import 'models.dart';
 
 abstract class IndicatePainter extends CustomPainter {
-  final StylusPainterController controller;
+  final List<StylusPointer> pointers;
 
   final double scaleRatio;
 
-  IndicatePainter(this.controller, this.scaleRatio);
+  IndicatePainter(this.pointers, this.scaleRatio);
 
   bool trackEnabled = false;
 
@@ -21,12 +20,12 @@ abstract class IndicatePainter extends CustomPainter {
 
   @override
   void paint(ui.Canvas canvas, ui.Size size) {
-    var length = controller.pointers.length;
+    var length = pointers.length;
     var count = trackEnabled ? trackPointerCount : 1;
     if (length < count) return;
 
-    var pointers = controller.pointers.sublist(length - count);
-    paintPointers(canvas, size, pointers);
+    var sublist = pointers.sublist(length - count);
+    paintPointers(canvas, size, sublist);
   }
 
   void paintPointers(ui.Canvas canvas, ui.Size size, List<StylusPointer> pointers);
@@ -36,8 +35,8 @@ abstract class IndicatePainter extends CustomPainter {
 }
 
 class CircleIndicatePainter extends IndicatePainter {
-  CircleIndicatePainter(StylusPainterController controller, double scaleRatio)
-      : super(controller, scaleRatio);
+  CircleIndicatePainter(List<StylusPointer> pointers, double scaleRatio)
+      : super(pointers, scaleRatio);
 
   static const Color defaultColor = Colors.black;
 
@@ -58,8 +57,8 @@ class CircleIndicatePainter extends IndicatePainter {
 class ImageIndicatePainter extends IndicatePainter {
   final ui.Image image;
 
-  ImageIndicatePainter(StylusPainterController controller, double scaleRatio, this.image)
-    : super(controller, scaleRatio) {
+  ImageIndicatePainter(List<StylusPointer> pointers, double scaleRatio, this.image)
+    : super(pointers, scaleRatio) {
     translate = defaultTranslate;
   }
 

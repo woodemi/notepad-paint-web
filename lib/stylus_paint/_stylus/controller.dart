@@ -9,11 +9,11 @@ class StylusPainterController {
     ..color = Colors.black
     ..strokeWidth = 5;
 
-  /// All pointers
-  final List<StylusPointer> pointers = List<StylusPointer>();
-
-  /// Pointers whose pressure > 0
   final List<StylusStroke> strokes = List<StylusStroke>();
+
+  int _strokePointerCount = 0;
+
+  int get strokePointerCount => _strokePointerCount;
 
   Paint _paint = defaultPaint;
 
@@ -27,8 +27,6 @@ class StylusPainterController {
   StylusStroke _s;
 
   void append(StylusPointer pointer) {
-    pointers.add(pointer);
-
     if (pointer.p == 0) {
       _s = null; // Ensure no stroke
       return;
@@ -39,5 +37,11 @@ class StylusPainterController {
       strokes.add(_s);
     }
     _s.pointers.add(pointer);
+    _strokePointerCount++;
+  }
+
+  void clear() {
+    strokes.clear();
+    _strokePointerCount = 0;
   }
 }

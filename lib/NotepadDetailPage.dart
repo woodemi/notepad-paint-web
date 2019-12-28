@@ -173,12 +173,11 @@ class _PaintAreaState extends State<PaintArea> {
           CustomPaint(
             size: widget.paintSize,
             painter: LineStrokePainter(
-              widget.controller,
+              widget.controller.strokes,
               widget.scaleRatio,
             ),
           ),
           IndicatorLayer(
-            widget.controller,
             widget.scaleRatio,
             widget.paintSize,
           ),
@@ -189,19 +188,22 @@ class _PaintAreaState extends State<PaintArea> {
 }
 
 class IndicatorLayer extends StatefulWidget {
-  final StylusPainterController controller;
+  // TODO IndicatePainterController
+  final StylusPainterController controller = StylusPainterController();
 
   final double scaleRatio;
 
   final Size paintSize;
 
-  IndicatorLayer(this.controller, this.scaleRatio, this.paintSize);
+  IndicatorLayer(this.scaleRatio, this.paintSize);
 
   @override
   State<StatefulWidget> createState() => _IndicatorLayerState();
 }
 
 class _IndicatorLayerState extends State<IndicatorLayer> {
+  final List<StylusPointer> _pointers = <StylusPointer>[];
+
   ui.Image _indicator;
 
   bool visible = false;
@@ -214,8 +216,14 @@ class _IndicatorLayerState extends State<IndicatorLayer> {
     loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
       setState(() => _indicator = onValue);
     });
-    _streamSubscription = syncPointerStreamController.stream.timeout(Duration(milliseconds: 100)).listen((onData) {
-      if (!visible) setState(() => visible = true);
+    var stream = syncPointerStreamController.stream
+        .map((p) => StylusPointer.fromMap(p.toMap()))
+        .timeout(Duration(milliseconds: 100));
+    _streamSubscription = stream.listen((onData) {
+      setState(() {
+        _pointers.add(onData);
+        if (!visible) setState(() => visible = true);
+      });
     }, onError: (error) {
       if (error is TimeoutException) {
         if (visible) setState(() => visible = false);
@@ -246,7 +254,7 @@ class _IndicatorLayerState extends State<IndicatorLayer> {
         CustomPaint(
           size: widget.paintSize,
           painter: CircleIndicatePainter(
-            widget.controller,
+            _pointers,
             widget.scaleRatio,
           )..uiPaint.style = PaintingStyle.stroke,
         ),
@@ -254,7 +262,7 @@ class _IndicatorLayerState extends State<IndicatorLayer> {
           CustomPaint(
             size: widget.paintSize,
             painter: ImageIndicatePainter(
-              widget.controller,
+              _pointers,
               widget.scaleRatio,
               _indicator,
             ),

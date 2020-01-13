@@ -147,13 +147,25 @@ final syncPointerStreamController = StreamController<NotePenPointer>.broadcast()
 class _PaintAreaState extends State<PaintArea> {
   StreamSubscription<StylusPointer> _streamSubscription;
 
+  final List<StylusStroke> historyStrokes = <StylusStroke>[];
+
+  final threshold = 500;
+
   @override
   void initState() {
     super.initState();
     widget.controller.paint.strokeWidth = 0.5;
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
     _streamSubscription = stylusPointerStream.listen((onData) {
-      setState(() => widget.controller.append(onData));
+      widget.controller.append(onData);
+      if (widget.controller.strokePointerCount > threshold) {
+        historyStrokes.addAll(widget.controller.strokes);
+        widget.controller.clear();
+      }
+      if (onData.p > 0)
+        setState(() {
+          print('setState');
+        });
     });
   }
 
@@ -170,11 +182,24 @@ class _PaintAreaState extends State<PaintArea> {
       constraints: BoxConstraints.loose(widget.paintSize),
       child: Stack(
         children: <Widget>[
+          RepaintBoundary(
+            child: CustomPaint(
+              size: widget.paintSize,
+              painter: LineStrokePainter(
+                historyStrokes,
+                widget.scaleRatio,
+                widget.controller.strokes.isEmpty,
+              ),
+              isComplex: true,
+              willChange: widget.controller.strokes.isEmpty,
+            ),
+          ),
           CustomPaint(
             size: widget.paintSize,
             painter: LineStrokePainter(
               widget.controller.strokes,
               widget.scaleRatio,
+              true,
             ),
           ),
           IndicatorLayer(

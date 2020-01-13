@@ -30,7 +30,9 @@ class LineStrokePainter extends CustomPainter {
 
   final double scaleRatio;
 
-  LineStrokePainter(this.strokes, this.scaleRatio);
+  final bool forceRepaint;
+
+  LineStrokePainter(this.strokes, this.scaleRatio, this.forceRepaint);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -47,7 +49,10 @@ class LineStrokePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(LineStrokePainter oldDelegate) {
+    var should = strokes.length != oldDelegate.strokes.length;
+    return forceRepaint || should;
+  }
 }
 
 const CUBIC_NUM = 4;
@@ -57,7 +62,9 @@ class PathStrokePainter extends CustomPainter {
 
   final double scaleRatio;
 
-  PathStrokePainter(this.strokes, this.scaleRatio);
+  final bool forceRepaint;
+
+  PathStrokePainter(this.strokes, this.scaleRatio, this.forceRepaint);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -85,5 +92,8 @@ class PathStrokePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(PathStrokePainter oldDelegate) {
+    var should = strokes.length != oldDelegate.strokes.length;
+    return forceRepaint || should;
+  }
 }

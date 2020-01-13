@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:notepad_core/notepad_core.dart';
@@ -9,6 +9,8 @@ import 'stylus_paint/stylus_paint.dart';
 
 class NotepadDetailPage extends StatefulWidget {
   final scanResult;
+
+  final stylusPaintController = StylusPainterController();
 
   NotepadDetailPage(this.scanResult);
 
@@ -68,11 +70,32 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('NotepadDetailPage'),
+        actions: <Widget>[
+          FlatButton(
+            child: Icon(Icons.exposure_plus_1),
+            onPressed: () {
+              widget.stylusPaintController.paint.strokeWidth++;
+            },
+          ),
+          FlatButton(
+            child: Icon(Icons.format_color_text),
+            onPressed: () {
+              widget.stylusPaintController.paint.color = Colors.red;
+            },
+          ),
+          FlatButton(
+            child: Icon(Icons.clear),
+            onPressed: () {
+              widget.stylusPaintController.paint = StylusPainterController.defaultPaint;
+            },
+          )
+        ],
       ),
       body: Center(
         child: PaintArea.of(
+          controller: widget.stylusPaintController,
           srcSize: Size(14800, 21000),
-          dstSize: window.physicalSize,
+          dstSize: ui.window.physicalSize,
           backgroundColor: Color(0xFFFEFEFE),
         ),
       ),
@@ -81,6 +104,8 @@ class _NotepadDetailPageState extends State<NotepadDetailPage> implements Notepa
 }
 
 class PaintArea extends StatefulWidget {
+  final StylusPainterController controller;
+
   final double scaleRatio;
 
   final Size paintSize;
@@ -88,6 +113,7 @@ class PaintArea extends StatefulWidget {
   final Color backgroundColor;
 
   PaintArea({
+    this.controller,
     this.scaleRatio,
     this.paintSize,
     this.backgroundColor,
@@ -96,14 +122,16 @@ class PaintArea extends StatefulWidget {
         assert(paintSize != null);
 
   factory PaintArea.of({
+    StylusPainterController controller,
     Size srcSize,
     Size dstSize,
     Color backgroundColor,
   }) {
     final paintScale = min(dstSize.width / srcSize.width, dstSize.height / srcSize.height);
-    final scaleRatio = paintScale / window.devicePixelRatio;
+    final scaleRatio = paintScale / ui.window.devicePixelRatio;
     final paintSize = srcSize * scaleRatio;
     return PaintArea(
+      controller: controller,
       scaleRatio: scaleRatio,
       paintSize: paintSize,
       backgroundColor: backgroundColor,
@@ -111,31 +139,33 @@ class PaintArea extends StatefulWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: backgroundColor,
-      width: paintSize.width,
-      height: paintSize.height,
-    );
-  }
-
-  @override
   State<StatefulWidget> createState() => _PaintAreaState();
 }
 
-final syncPointerStreamController = StreamController<NotePenPointer>();
+final syncPointerStreamController = StreamController<NotePenPointer>.broadcast();
 
 class _PaintAreaState extends State<PaintArea> {
-  final _pointers = <StylusPointer>[];
-
   StreamSubscription<StylusPointer> _streamSubscription;
+
+  final List<StylusStroke> historyStrokes = <StylusStroke>[];
+
+  final threshold = 500;
 
   @override
   void initState() {
     super.initState();
+    widget.controller.paint.strokeWidth = 0.5;
     final stylusPointerStream = syncPointerStreamController.stream.map((p) => StylusPointer.fromMap(p.toMap()));
     _streamSubscription = stylusPointerStream.listen((onData) {
-      setState(() => _pointers.add(onData));
+      widget.controller.append(onData);
+      if (widget.controller.strokePointerCount > threshold) {
+        historyStrokes.addAll(widget.controller.strokes);
+        widget.controller.clear();
+      }
+      if (onData.p > 0)
+        setState(() {
+          print('setState');
+        });
     });
   }
 
@@ -150,14 +180,129 @@ class _PaintAreaState extends State<PaintArea> {
     return Container(
       color: widget.backgroundColor,
       constraints: BoxConstraints.loose(widget.paintSize),
-      child: CustomPaint(
-        size: widget.paintSize,
-        painter: DotStrokePainter(
-          _pointers,
-          widget.scaleRatio,
-          stylusPaint: Paint()..color = Colors.lightBlueAccent,
-        ),
+      child: Stack(
+        children: <Widget>[
+          RepaintBoundary(
+            child: CustomPaint(
+              size: widget.paintSize,
+              painter: LineStrokePainter(
+                historyStrokes,
+                widget.scaleRatio,
+                widget.controller.strokes.isEmpty,
+              ),
+              isComplex: true,
+              willChange: widget.controller.strokes.isEmpty,
+            ),
+          ),
+          CustomPaint(
+            size: widget.paintSize,
+            painter: LineStrokePainter(
+              widget.controller.strokes,
+              widget.scaleRatio,
+              true,
+            ),
+          ),
+          IndicatorLayer(
+            widget.scaleRatio,
+            widget.paintSize,
+          ),
+        ],
       ),
     );
   }
+}
+
+class IndicatorLayer extends StatefulWidget {
+  // TODO IndicatePainterController
+  final StylusPainterController controller = StylusPainterController();
+
+  final double scaleRatio;
+
+  final Size paintSize;
+
+  IndicatorLayer(this.scaleRatio, this.paintSize);
+
+  @override
+  State<StatefulWidget> createState() => _IndicatorLayerState();
+}
+
+class _IndicatorLayerState extends State<IndicatorLayer> {
+  final List<StylusPointer> _pointers = <StylusPointer>[];
+
+  ui.Image _indicator;
+
+  bool visible = false;
+
+  StreamSubscription _streamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAssetImage(AssetImage('images/indicator_pen.png')).then((onValue) {
+      setState(() => _indicator = onValue);
+    });
+    var stream = syncPointerStreamController.stream
+        .map((p) => StylusPointer.fromMap(p.toMap()))
+        .timeout(Duration(milliseconds: 100));
+    _streamSubscription = stream.listen((onData) {
+      setState(() {
+        _pointers.add(onData);
+        if (!visible) setState(() => visible = true);
+      });
+    }, onError: (error) {
+      if (error is TimeoutException) {
+        if (visible) setState(() => visible = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _streamSubscription?.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return visible
+        ? _buildIndicator()
+        : AnimatedOpacity(
+            opacity: 0.0,
+            duration: Duration(milliseconds: 200),
+            child: _buildIndicator(),
+          );
+  }
+
+  Stack _buildIndicator() {
+    return Stack(
+      children: <Widget>[
+        CustomPaint(
+          size: widget.paintSize,
+          painter: CircleIndicatePainter(
+            _pointers,
+            widget.scaleRatio,
+          )..uiPaint.style = PaintingStyle.stroke,
+        ),
+        if (_indicator != null)
+          CustomPaint(
+            size: widget.paintSize,
+            painter: ImageIndicatePainter(
+              _pointers,
+              widget.scaleRatio,
+              _indicator,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+Future<ui.Image> loadAssetImage<T>(ImageProvider<T> imageProvider) async {
+  var stream = imageProvider.resolve(ImageConfiguration.empty);
+  var completer = Completer<ui.Image>();
+  var listener = ImageStreamListener((frame, sync) => completer.complete(frame.image));
+  stream.addListener(listener);
+  var image = await completer.future;
+  stream.removeListener(listener);
+  return image;
 }

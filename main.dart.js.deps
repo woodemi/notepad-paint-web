@@ -4,8 +4,10 @@ file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/NotepadDetailPa
 file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/WebApp.dart
 file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/generated_plugin_registrant.dart
 file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/main.dart
+file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/_stylus/controller.dart
+file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/_stylus/indicate_painters.dart
 file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/_stylus/models.dart
-file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/_stylus/painters.dart
+file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/_stylus/stroke_painters.dart
 file:///home/runner/work/notepad-paint-web/notepad-paint-web/lib/stylus_paint/stylus_paint.dart
 file:///opt/hostedtoolcache/flutter/1.12.13-hotfix.6-beta/x64/.pub-cache/hosted/pub.flutter-io.cn/charcode-1.1.2/lib/ascii.dart
 file:///opt/hostedtoolcache/flutter/1.12.13-hotfix.6-beta/x64/.pub-cache/hosted/pub.flutter-io.cn/collection-1.14.11/lib/collection.dart
